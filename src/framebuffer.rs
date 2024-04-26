@@ -98,6 +98,7 @@ impl Framebuffer {
     {
         let mut current: Option<&Color> = None;
 
+        let mut i = 0;
         for row in &self.colors {
             for c in row {
                 if current == None || current.unwrap() != c {
@@ -117,8 +118,10 @@ impl Framebuffer {
                 Ok(_) => (),
                 Err(e) => return Err(FramebufferError::IoError(e)),
             };
-            if row != self.colors.last().unwrap() {
-                match out.write(b"\r\n") {
+
+            i += 1;
+            if i != self.height() {
+                match out.write(b"\n") {
                     Ok(_) => (),
                     Err(e) => return Err(FramebufferError::IoError(e)),
                 }

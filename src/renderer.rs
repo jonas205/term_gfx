@@ -1,6 +1,9 @@
-use std::{io::{stdout, Stdout}, process::exit};
+use std::io::{stdout, Stdout};
 
-use crate::{framebuffer::{Framebuffer, FramebufferError}, Color};
+use crate::{
+    framebuffer::{Framebuffer, FramebufferError},
+    Color,
+};
 
 #[derive(Debug)]
 pub enum RendererError {
@@ -26,10 +29,7 @@ impl Renderer {
             Err(e) => return Err(RendererError::FBError(e)),
         }
 
-        Ok(Renderer {
-            out,
-            fb,
-        })
+        Ok(Renderer { out, fb })
     }
 
     pub(crate) fn render(&mut self) -> Result<(), RendererError> {
@@ -54,7 +54,6 @@ impl Renderer {
         if x < 0 || y < 0 {
             return false;
         }
-
         match self.fb.set_pixel(x as usize, y as usize, color) {
             Ok(_) => true,
             Err(_) => false,
@@ -62,29 +61,31 @@ impl Renderer {
     }
 
     pub fn line(&mut self, x0: i64, y0: i64, x1: i64, y1: i64, color: Color) {
-        if y0 > y1 {
-            return self.line(x1, y1, x0, y0, color);
-        } else if y0 == y1 {
-            let start = if x0 < x1 { x0 } else { x1 };
-            let end = if x0 < x1 { x1 } else { x0 };
+        let dx = (x1 - x0).abs();
+        let dy = (y1 - y0).abs();
 
-            for i in start..=end {
-                self.pixel(i, y0, color.clone());
+        let mut x = x0;
+        let mut y = y0;
+
+        let sx = if x0 < x1 { 1 } else { -1 };
+        let sy = if y0 < y1 { 1 } else { -1 };
+        let mut err = if dx > dy { dx } else { -dy } / 2;
+        let mut e2;
+
+        loop {
+            self.pixel(x, y, color.clone());
+            if x == x1 && y == y1 {
+                break;
             }
-
-            return;
-        }
-
-        let m = (x1 - x0) as f32 / (y1 - y0) as f32; 
-
-        for i in 0..=(y1 - y0) {
-            for j in 0..=(m as i64) {
-                let x = x0 + (i as f32 * m) as i64 + j;
-                self.pixel(x, y0 + i, color.clone());
+            e2 = err;
+            if e2 > -dx {
+                err -= dy;
+                x += sx;
+            }
+            if e2 < dy {
+                err += dx;
+                y += sy;
             }
         }
-
-        self.pixel(x0, y0, color.clone());
-        self.pixel(x1, y1, color);
     }
 }

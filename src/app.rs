@@ -1,4 +1,4 @@
-use std::{thread::sleep, time::{Duration, Instant}};
+use std::{cell::RefCell, rc::Rc, thread::sleep, time::{Duration, Instant}};
 
 use crate::{framebuffer::FramebufferError, renderer, Renderer};
 
@@ -36,14 +36,37 @@ where
 
 pub trait Scene {
     fn update(&mut self, renderer: &mut Renderer);
+    fn attach(&mut self, app_info: &AppInfo);
+    fn detach(&mut self);
+}
+
+pub struct AppInfo {
+    pub running: Rc<RefCell<bool>>,
+    pub renderer: Rc<RefCell<Renderer>>,
+}
+
+impl AppInfo {
+    pub fn running(&self) -> bool {
+        *self.running.as_ref().borrow()
+    }
+    pub fn set_running(&mut self, r: bool) {
+        *self.running.as_ref().borrow_mut() = r;
+    }
+}
+
+impl Clone for AppInfo {
+    fn clone(&self) -> Self {
+        AppInfo {
+            running: self.running.clone(),
+            renderer: self.renderer.clone(),
+        }
+    }
 }
 
 struct App {
     sleep_time: Duration,
-    running: bool,
-
+    app_info: AppInfo,
     scene: Box<dyn Scene>,
-    renderer: Renderer,
 }
 
 impl App {
@@ -55,21 +78,24 @@ impl App {
 
         Ok(App {
             sleep_time: Duration::from_millis(1000 / startup_config.fps),
-            running: false,
             scene,
-            renderer,
+            app_info: AppInfo {
+                running: Rc::new(RefCell::new(false)),
+                renderer: Rc::new(RefCell::new(renderer)),
+            }
         })
     }
 
     fn run(&mut self) -> Result<(), AppError> {
-        self.running = true;
+        self.app_info.set_running(true);
 
-        while self.running {
+        self.scene.attach(&self.app_info);
+        while self.app_info.running() {
             let start = Instant::now();
 
-            self.scene.update(&mut self.renderer);
+            self.scene.update(&mut self.app_info.renderer.as_ref().borrow_mut());
 
-            match self.renderer.render() {
+            match self.app_info.renderer.as_ref().borrow_mut().render() {
                 Ok(_) => (),
                 Err(e) => return Err(AppError::RendererError(e)),
             }
