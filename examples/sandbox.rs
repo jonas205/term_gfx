@@ -1,42 +1,44 @@
-use std::{io::stdout, thread::sleep, time::Duration};
+use std::process::exit;
 
-use term_gfx::{framebuffer::FramebufferError, Color, Framebuffer};
+use term_gfx::{app::{AppError, AppStartupConfig, Scene}, Color, Renderer};
 
-fn main() -> Result<(), FramebufferError> {
-    let mut fb = Framebuffer::new_terminal_size(Color::rgb(0, 0, 0))?;
+fn error_handler(err: AppError) {
+    eprintln!("Got an error: {:?}", err);
+    exit(-1);
+}
 
-    let w = fb.width();
-    let h = fb.height();
+struct ExampleScene;
 
-
-    let mut x = 1;
-    let out = &mut stdout();
-
-    loop {
-        fb.clear(Color::grey(127));
+impl Scene for ExampleScene {
+    fn update(&mut self, renderer: &mut Renderer) {
+        let (w, h) = renderer.screen_size();
 
         for i in 0..w {
-            fb.set_pixel(i, 0, Color::rgb(255, 0, 0))?;
-            fb.set_pixel(i, h - 1, Color::rgb(0, 255, 0))?;
+            renderer.pixel(i, 0, Color::rgb(255, 0, 0));
+            renderer.pixel(i, h - 1, Color::rgb(0, 255, 0));
         }
 
         for i in 0..h {
-            fb.set_pixel(0, i, Color::rgb(0, 0, 255))?;
-            fb.set_pixel(w - 1, i, Color::rgb(255, 255, 0))?;
+            renderer.pixel(0, i, Color::rgb(0, 0, 255));
+            renderer.pixel(w - 1, i, Color::rgb(255, 255, 0));
         }
 
-        fb.set_pixel(0 + x, 3, Color::rgb(255, 0, 0))?;
+        renderer.line(w / 3, h / 4, w / 3 * 2, h / 2, Color::rgb(0, 255, 255));
+        renderer.line(w / 3, h / 4, w / 7 * 2, h / 3 * 2, Color::rgb(0, 255, 255));
+        renderer.pixel(w / 3, h / 4, Color::grey(255));
+        renderer.pixel(w / 3 * 2, h / 2, Color::grey(255));
+        renderer.pixel(w / 7 * 2, h / 3 * 2, Color::grey(255));
 
-        x += 1;
-        if x > w - 2 {
-            x = 1;
-        }
-
-        fb.draw(out)?;
-        fb.reset_cursor(out)?;
-
-        sleep(Duration::from_millis(1000 / 60));
+        renderer.line(10, 10, 30, 10, Color::rgb(255, 0, 255));
     }
+}
 
-    // Ok(())
+fn main() {
+    let cfg = AppStartupConfig {
+        fps: 3,
+    };
+
+    let scene = Box::new(ExampleScene);
+
+    term_gfx::run(scene, cfg, error_handler);
 }

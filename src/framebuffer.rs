@@ -12,7 +12,7 @@ pub enum FramebufferError {
     IoError(io::Error),
 }
 
-pub struct Framebuffer {
+pub(crate) struct Framebuffer {
     colors: Vec<Vec<Color>>,
 }
 
@@ -64,7 +64,23 @@ impl Framebuffer {
         }
     }
 
-    pub fn reset_cursor<R>(&mut self, out: &mut R) -> Result<(), FramebufferError>
+    pub fn hide_cursor<R>(&self, out: &mut R, hide: bool) -> Result<(), FramebufferError>
+    where
+        R: std::io::Write,
+    {
+        match if hide {
+            out.write(b"\x1b[?25l")
+        } else {
+            out.write(b"\x1b[?25h")
+        } {
+            Ok(_) => (),
+            Err(e) => return Err(FramebufferError::IoError(e)),
+        };
+
+        Ok(())
+    }
+
+    pub fn reset_cursor<R>(&self, out: &mut R) -> Result<(), FramebufferError>
     where
         R: std::io::Write,
     {
@@ -76,7 +92,7 @@ impl Framebuffer {
         Ok(())
     }
 
-    pub fn draw<R>(&self, out: &mut R) -> Result<(), FramebufferError>
+    pub fn render<R>(&self, out: &mut R) -> Result<(), FramebufferError>
     where
         R: std::io::Write,
     {
