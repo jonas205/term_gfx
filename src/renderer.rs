@@ -1,8 +1,7 @@
 use std::io::{stdout, Stdout};
 
 use crate::{
-    framebuffer::{Framebuffer, FramebufferError},
-    Color,
+    framebuffer::{Framebuffer, FramebufferError}, profile, Color
 };
 
 #[derive(Debug)]
@@ -17,6 +16,7 @@ pub struct Renderer {
 
 impl Renderer {
     pub(crate) fn new() -> Result<Renderer, RendererError> {
+        profile!();
         let fb = match Framebuffer::new_terminal_size(Color::grey(0)) {
             Ok(fb) => fb,
             Err(e) => return Err(RendererError::FBError(e)),
@@ -33,6 +33,7 @@ impl Renderer {
     }
 
     pub(crate) fn render(&mut self) -> Result<(), RendererError> {
+        profile!();
         match self.fb.render(&mut self.out) {
             Ok(_) => (),
             Err(e) => return Err(RendererError::FBError(e)),
@@ -58,7 +59,7 @@ impl Renderer {
             Ok(_) => true,
             Err(_) => false,
         }
-    }
+     }
 
     pub fn line(&mut self, x0: i64, y0: i64, x1: i64, y1: i64, color: Color) {
         let dx = (x1 - x0).abs();
@@ -87,5 +88,11 @@ impl Renderer {
                 y += sy;
             }
         }
+    }
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        self.fb.hide_cursor(&mut self.out, false).unwrap();
     }
 }
