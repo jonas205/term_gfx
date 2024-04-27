@@ -128,9 +128,6 @@ fn main() {
         exit(-1);
     }
 
-    println!("\x1b[?1003h");
-    loop {}
-
     let cfg = AppStartupConfig { fps: 60 };
 
     let scene = Box::new(GameOfLifeScene { cells: Vec::new(), width: 0, height: 0 });
