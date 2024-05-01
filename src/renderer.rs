@@ -52,42 +52,15 @@ impl Renderer {
     }
 
     pub fn pixel(&mut self, x: i64, y: i64, color: Color) -> bool {
-        if x < 0 || y < 0 {
-            return false;
-        }
-        match self.fb.set_pixel(x as usize, y as usize, color) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.fb.pixel(x, y, color)
      }
 
     pub fn line(&mut self, x0: i64, y0: i64, x1: i64, y1: i64, color: Color) {
-        let dx = (x1 - x0).abs();
-        let dy = (y1 - y0).abs();
+        self.fb.line(x0, y0, x1, y1, color);
+    }
 
-        let mut x = x0;
-        let mut y = y0;
-
-        let sx = if x0 < x1 { 1 } else { -1 };
-        let sy = if y0 < y1 { 1 } else { -1 };
-        let mut err = if dx > dy { dx } else { -dy } / 2;
-        let mut e2;
-
-        loop {
-            self.pixel(x, y, color.clone());
-            if x == x1 && y == y1 {
-                break;
-            }
-            e2 = err;
-            if e2 > -dx {
-                err -= dy;
-                x += sx;
-            }
-            if e2 < dy {
-                err += dx;
-                y += sy;
-            }
-        }
+    pub fn draw_framebuffer(&mut self, x: i64, y: i64, fb: &Framebuffer) {
+        self.fb.draw_framebuffer(x, y, fb);
     }
 }
 

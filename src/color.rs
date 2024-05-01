@@ -12,6 +12,38 @@ impl Color {
         Color { red, green, blue }
     }
 
+    pub fn white() -> Color {
+        Color::rgb(255, 255, 255)
+    }
+
+    pub fn cyan() -> Color {
+        Color::rgb(0, 255, 255)
+    }
+
+    pub fn pink() -> Color {
+        Color::rgb(255, 0, 255)
+    }
+
+    pub fn blue() -> Color {
+        Color::rgb(0, 0, 255)
+    }
+
+    pub fn yellow() -> Color {
+        Color::rgb(255, 255, 0)
+    }
+
+    pub fn green() -> Color {
+        Color::rgb(0, 255, 0)
+    }
+
+    pub fn red() -> Color {
+        Color::rgb(255, 0, 0)
+    }
+
+    pub fn black() -> Color {
+        Color::rgb(0, 0, 0)
+    }
+
     pub fn grey(grey: u8) -> Color {
         Color {
             red: grey,

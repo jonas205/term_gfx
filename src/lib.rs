@@ -12,6 +12,10 @@ pub mod profiler;
 pub use color::Color;
 pub use app::run;
 pub use renderer::Renderer;
+pub use framebuffer::Framebuffer;
 
+extern "C" {
+    pub fn foo();
+}
 
 
