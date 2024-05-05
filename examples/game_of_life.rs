@@ -119,6 +119,10 @@ impl Scene for GameOfLifeScene {
             }
         }
     }
+
+    fn event(&mut self, event: &term_gfx::event::Event) {
+        
+    }
 }
 
 fn main() {

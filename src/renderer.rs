@@ -47,6 +47,10 @@ impl Renderer {
         Ok(())
     }
 
+    pub(crate) fn resize(&mut self, w: i64, h: i64) {
+        self.fb = Framebuffer::new(w as usize, h as usize, Color::black());
+    }
+
     pub fn screen_size(&self) -> (i64, i64) {
         (self.fb.width() as i64, self.fb.height() as i64)
     }

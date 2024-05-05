@@ -85,13 +85,13 @@ impl Framebuffer {
         let mut g: u64 = 0;
         let mut b: u64 = 0;
 
-        let dx = (x1 - x0) / samples as f32;
-        let dy = (y1 - y0) / samples as f32;
+        let dx = (x1 - x0) / (2 + samples) as f32;
+        let dy = (y1 - y0) / (2 + samples) as f32;
 
         let mut n = 0;
 
-        for i in 0..=samples {
-            for j in 0..=samples {
+        for i in 1..=(samples + 1) {
+            for j in 1..=(samples + 1) {
                 let x = (x0 + dx * j as f32) as i64;
                 let y = (y0 + dy * i as f32) as i64;
 
@@ -115,16 +115,25 @@ impl Framebuffer {
     pub fn new_resized(old: &Framebuffer, width: usize, height: usize) -> Framebuffer {
         profile!();
 
+        if width == old.width && height == old.height {
+            return Framebuffer {
+                colors: old.colors.clone(),
+                width,
+                height,
+            };
+        }
+
         let mut colors: Vec<Color> = Vec::with_capacity(height * width);
+
+        let (w, ow, h, oh) = (
+            width as f32,
+            old.width as f32,
+            height as f32,
+            old.height as f32,
+        );
 
         for j in 0..height {
             for i in 0..width {
-                let (w, ow, h, oh) = (
-                    width as f32,
-                    old.width as f32,
-                    height as f32,
-                    old.height as f32,
-                );
                 let i = i as f32;
                 let j = j as f32;
 

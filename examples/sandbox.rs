@@ -1,7 +1,9 @@
 use std::process::exit;
 
 use term_gfx::{
-    app::{AppError, AppStartupConfig, Scene}, Color, Framebuffer, Renderer
+    app::{AppError, AppStartupConfig, Scene},
+    event::Event,
+    Color, Framebuffer, Renderer,
 };
 
 fn error_handler(err: AppError) {
@@ -10,24 +12,22 @@ fn error_handler(err: AppError) {
 }
 
 struct ExampleScene {
-    buf: Framebuffer,
     img: Framebuffer,
     img_sml: Framebuffer,
+    img_small_size: (usize, usize),
 }
 
 impl ExampleScene {
     fn new() -> ExampleScene {
-        let mut buf = Framebuffer::new(10, 10, Color::white());
-        
-        buf.line(0, 0, 5, 10, Color::cyan());
-
         let img = Framebuffer::new_image("res/test_image.png").unwrap();
-        let img_sml = Framebuffer::new_resized(&img, img.width() - 5, img.height() - 5);
+        let img_small_size = (img.width() - 5, img.height() - 5);
+
+        let img_sml = Framebuffer::new_resized(&img, img_small_size.0, img_small_size.1);
 
         ExampleScene {
-            buf,
             img,
             img_sml,
+            img_small_size,
         }
     }
 
@@ -74,14 +74,28 @@ impl Scene for ExampleScene {
         self.draw_triangle(renderer);
 
         renderer.line(10, 10, 30, 10, Color::rgb(255, 0, 255));
-        renderer.draw_framebuffer(5, 5, &self.buf);
-        renderer.draw_framebuffer(5, 20, &self.img);
-        renderer.draw_framebuffer(5 + self.img.width() as i64 + 1, 20, &self.img_sml);
+        renderer.draw_framebuffer(5, 5, &self.img);
+        renderer.draw_framebuffer(5 + self.img.width() as i64 + 1, 5, &self.img_sml);
+    }
+
+    fn event(&mut self, event: &Event) {
+        if let Event::CharEvent(c) = event {
+            match c {
+                'w' => self.img_small_size.1 -= 1,
+                'a' => self.img_small_size.0 -= 1,
+                's' => self.img_small_size.1 += 1,
+                'd' => self.img_small_size.0 += 1,
+                _ => return,
+            }
+
+            self.img_sml =
+                Framebuffer::new_resized(&self.img, self.img_small_size.0, self.img_small_size.1);
+        }
     }
 }
 
 fn main() {
-    let cfg = AppStartupConfig { fps: 3 };
+    let cfg = AppStartupConfig { fps: 60 };
 
     let scene = Box::new(ExampleScene::new());
 

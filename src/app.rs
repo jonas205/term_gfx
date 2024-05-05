@@ -8,7 +8,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{framebuffer::FramebufferError, profile, profiler::Profiler, renderer, Renderer};
+use crate::{
+    event::{Event, EventHandler}, framebuffer::{self, FramebufferError}, profile, profiler::Profiler, renderer, Framebuffer, Renderer
+};
 
 pub struct AppStartupConfig {
     pub fps: u64,
@@ -52,6 +54,7 @@ where
 
 pub trait Scene {
     fn update(&mut self, renderer: &mut Renderer);
+    fn event(&mut self, event: &Event);
     fn attach(&mut self, app_info: &AppInfo);
     fn detach(&mut self);
 }
@@ -74,6 +77,7 @@ struct App {
     sleep_time: Duration,
     app_info: AppInfo,
     scene: Box<dyn Scene>,
+    event_handler: EventHandler,
     pub running: Arc<Mutex<bool>>,
 }
 
@@ -93,48 +97,75 @@ impl App {
         })
         .unwrap();
 
+        let event_handler = EventHandler::new();
+
         Ok(App {
             sleep_time: Duration::from_millis(1000 / startup_config.fps),
             scene,
             running,
+            event_handler,
             app_info: AppInfo {
                 renderer: Rc::new(RefCell::new(renderer)),
             },
         })
     }
 
-    fn run(&mut self) -> Result<(), AppError> {
+    fn run_iteration(&mut self, events: &Vec<Event>) -> Result<(), AppError> {
         profile!();
-        *self.running.borrow_mut().lock().unwrap() = true;
+        let start = Instant::now();
 
-        self.scene.attach(&self.app_info);
-        while *self.running.borrow_mut().lock().unwrap() {
-            profile!("Loop");
-            let start = Instant::now();
+        for e in events {
+            profile!("User Scene Event");
 
-            {
-                profile!("User Scene");
-                self.scene
-                    .update(&mut self.app_info.renderer.as_ref().borrow_mut());
+            if let Event::Resize(w, h) = e {
+                self.app_info.renderer.as_ref().borrow_mut().resize(*w, *h);
             }
 
-            match self.app_info.renderer.as_ref().borrow_mut().render() {
-                Ok(_) => (),
-                Err(e) => return Err(AppError::RendererError(e)),
-            }
-
-            let loop_time = Instant::now() - start;
-            if loop_time < self.sleep_time {
-                profile!("Sleep");
-                sleep(self.sleep_time - loop_time);
-            }
+            self.scene.event(e);
         }
 
+        {
+            profile!("User Scene Update");
+            self.scene
+                .update(&mut self.app_info.renderer.as_ref().borrow_mut());
+        }
+
+
+        match self.app_info.renderer.as_ref().borrow_mut().render() {
+            Ok(_) => (),
+            Err(e) => return Err(AppError::RendererError(e)),
+        }
+
+        let loop_time = Instant::now() - start;
+        if loop_time < self.sleep_time {
+            profile!("Sleep");
+            sleep(self.sleep_time - loop_time);
+        }
+        Ok(())
+    }
+
+    fn run(&mut self) -> Result<(), AppError> {
+        profile!();
+        // Setup
+        *self.running.borrow_mut().lock().unwrap() = true;
+        self.scene.attach(&self.app_info);
+
+        // Loop
+        while *self.running.borrow_mut().lock().unwrap() {
+            let events = self.event_handler.get_events();
+
+            // for e in events {
+            //     println!("{:?}", e);
+            // }
+
+            self.run_iteration(&events)?;
+        }
+
+        // Cleanup
         let (_, h) = self.app_info.renderer.as_ref().borrow_mut().screen_size();
         for _ in 0..h {
             println!();
         }
-
 
         Ok(())
     }
