@@ -126,12 +126,6 @@ impl Scene for GameOfLifeScene {
 }
 
 fn main() {
-    #[cfg(not(feature = "profiling"))]
-    {
-        println!("Please enable profiling for this example: cargo run --example game_of_life --features profiling");
-        exit(-1);
-    }
-
     let cfg = AppStartupConfig { fps: 60 };
 
     let scene = Box::new(GameOfLifeScene { cells: Vec::new(), width: 0, height: 0 });
