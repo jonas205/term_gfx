@@ -88,6 +88,13 @@ impl Scene for ExampleScene {
                 _ => return,
             }
 
+            if self.img_small_size.1 == 0 {
+                self.img_small_size.1 = 1;
+            }
+            if self.img_small_size.0 == 0 {
+                self.img_small_size.0 = 1;
+            }
+
             self.img_sml =
                 Framebuffer::new_resized(&self.img, self.img_small_size.0, self.img_small_size.1);
         }
